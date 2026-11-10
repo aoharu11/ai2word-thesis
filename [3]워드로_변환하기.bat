@@ -11,19 +11,41 @@ echo ============================================
 echo.
 
 REM ---------------------------------------------------------
-REM 1. 엔진 존재 확인
+REM 1. 엔진 폴더 준비
+REM ---------------------------------------------------------
+if not exist "engine" (
+    mkdir engine
+)
+
+REM ---------------------------------------------------------
+REM 2. pandoc.exe 존재 확인 및 자동 다운로드 (최초 1회만)
 REM ---------------------------------------------------------
 if not exist "engine\pandoc.exe" (
-    echo [오류] engine\pandoc.exe 가 없습니다.
-    echo        아래 링크에서 pandoc을 다운로드해 engine 폴더에 넣으세요.
-    echo        https://github.com/jgm/pandoc/releases
+    echo [알림] 최초 실행입니다. Pandoc 변환 엔진을 자동으로 다운로드합니다...
+    echo        인터넷에 연결되어 있어야 합니다. 약 10~20초 소요됩니다.
+    echo.
+
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "& { $ProgressPreference='SilentlyContinue'; try { $api='https://api.github.com/repos/jgm/pandoc/releases/latest'; $json=Invoke-RestMethod -Uri $api; $url=($json.assets | Where-Object { $_.name -like '*windows-x86_64.zip' }).browser_download_url; if (-not $url) { throw '윈도우 64비트 zip을 찾지 못했습니다.' }; $zip=[System.IO.Path]::Combine($env:TEMP,'pandoc.zip'); $extract=[System.IO.Path]::Combine($env:TEMP,'pandoc_extract'); Invoke-WebRequest -Uri $url -OutFile $zip; Expand-Archive -Path $zip -DestinationPath $extract -Force; $exe=Get-ChildItem -Path $extract -Filter 'pandoc.exe' -Recurse | Select-Object -First 1; if (-not $exe) { throw '압축 해제된 폴더에서 pandoc.exe를 찾지 못했습니다.' }; Copy-Item $exe.FullName -Destination 'engine\pandoc.exe' -Force; Remove-Item $zip -Force -ErrorAction SilentlyContinue; Remove-Item $extract -Recurse -Force -ErrorAction SilentlyContinue; Write-Output '[완료] Pandoc 엔진 설치가 완료되었습니다.' } catch { Write-Error '[오류] Pandoc 자동 다운로드에 실패했습니다.'; Write-Error $_.Exception.Message; exit 1 } }"
+    if %errorlevel% neq 0 (
+        echo.
+        echo [오류] Pandoc 자동 다운로드에 실패했습니다.
+        echo        인터넷 연결을 확인한 뒤 다시 실행해 주세요.
+        echo.
+        pause
+        exit /b 1
+    )
+    echo.
+)
+
+if not exist "engine\pandoc.exe" (
+    echo [오류] engine\pandoc.exe 파일이 없습니다.
     echo.
     pause
     exit /b 1
 )
 
 REM ---------------------------------------------------------
-REM 2. 입력 원고 파일 확인
+REM 3. 입력 원고 파일 확인
 REM ---------------------------------------------------------
 set "INPUT=[2]원고입력.md"
 if not exist "%INPUT%" (
@@ -35,7 +57,7 @@ if not exist "%INPUT%" (
 )
 
 REM ---------------------------------------------------------
-REM 3. 선배 양식 파일 확인 (선택 사항)
+REM 4. 선배 양식 파일 확인 (선택 사항)
 REM ---------------------------------------------------------
 set "REF_OPTION="
 if exist "[1]선배양식.docx" (
