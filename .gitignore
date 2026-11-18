@@ -1,0 +1,19 @@
+__pycache__/
+*.pyc
+*.pyo
+
+# 변환 결과 및 임시 파일
+*_고침.md
+[결과]_완성논문.docx
+~$*.docx
+~$*.xlsx
+
+# 엔진 바이너리 (228MB - Git LFS 또는 Release zip으로 배포)
+engine/pandoc.exe
+
+# OS 생성 파일
+.DS_Store
+Thumbs.db
+
+# 로그
+*.log
